@@ -99,6 +99,37 @@ def show_w(ventana_principal,textow):
         ventana_w.bind('<Escape>', lambda event : ventana_w.destroy())
 
 
+def dialogo_sobreescribir_si_callback (ventana_sobreescribir,logbox,datos=dict()):
+    genera_archivo(logbox,datos)
+    ventana_sobreescribir.destroy()
+
+
+def muestra_dialogo_sobreescribir(ventana_principal,logbox,datos=dict()):
+    ventana_s = tkinter.Toplevel(ventana_principal)
+    ventana_s.title('ATENCION! SOBREESCRIBIR?')
+    ventana_s.geometry('300x100')
+    ventana_s.resizable(width = False, height = False)
+    ventana_s.transient(ventana_principal)
+    ventana_s.grab_set()
+    ventana_s.bind(
+        '<Escape>', lambda event : ventana_s.destroy())
+    frame_output = tkinter.Frame(ventana_s)
+    frame_input = tkinter.Frame(ventana_s)
+    label_pregunta = tkinter.Label(frame_output,
+                  text = 'El archivo ya existe. Sobreescribir?')
+    button_si = tkinter.Button(frame_input,text = 'SI!  ')
+    button_no = tkinter.Button(frame_input,text = 'NO...')
+    frame_output.pack(side=tkinter.TOP,pady=(10,5))
+    label_pregunta.pack(side=tkinter.LEFT)
+    frame_input.pack(side=tkinter.TOP,pady=(5,10))
+    button_si.pack(side = tkinter.RIGHT,padx=(5,0))
+    button_no.pack(side = tkinter.RIGHT,padx=(0,5))
+    button_si.config(command = lambda : dialogo_sobreescribir_si_callback(
+        ventana_s, logbox, datos))
+    button_no.config(command = lambda : ventana_s.destroy())
+    button_si.focus()
+
+
 def loguea(logbox,linea):
     logbox.configure(state='normal')
     logbox.insert(tk.END,linea)
@@ -107,7 +138,7 @@ def loguea(logbox,linea):
 
 
 def genera_archivo(logbox,datos=dict()):
-    with open(str(datos['nombre_archivo']),'a') as ar:
+    with open(str(datos['nombre_archivo']),'w') as ar:
         ciclo=int(0)
         while ciclo < int(datos['ciclos']):
             ar.write(str(datos['desde']).zfill(int(datos['cantidad_digitos']))+',')
@@ -117,7 +148,7 @@ def genera_archivo(logbox,datos=dict()):
             datos['desde']=int(datos['desde'])+1
             datos['tercervalor']=int(datos['tercervalor'])+1
             ciclo = ciclo + 1
-    loguea(logbox,'Archivo \''+os.path.split(str(datos['nombre_archivo']))[1]+'\' generado.')
+    loguea(logbox,'Archivo \''+os.path.split(str(datos['nombre_archivo']))[1]+'\' generado.\n')
 
 
 def convierte_a_dict (entry_desde,entry_intervalo,entry_cantdig,
@@ -145,12 +176,15 @@ def convierte_a_dict (entry_desde,entry_intervalo,entry_cantdig,
     return datos
 
 
-def generar (entry_desde,entry_intervalo,entry_cantdig,
+def generar (ventana_principal,entry_desde,entry_intervalo,entry_cantdig,
              entry_ciclos,entry_tervalor,entry_url,logbox):
     d=convierte_a_dict(entry_desde, entry_intervalo, entry_cantdig,
                      entry_ciclos, entry_tervalor, entry_url, logbox)
     if not d:
         return False
+    if os.path.isfile(d['nombre_archivo']):
+        muestra_dialogo_sobreescribir(ventana_principal,logbox,d)
+        return True
     genera_archivo(logbox,d)
     return True
 
@@ -218,7 +252,7 @@ def muestra_ventana():
     v.bind_all('<Control-Key-w>', lambda event :show_w(v, licencias['textow']))
     v.bind_all('<Control-Key-W>', lambda event :show_w(v, licencias['textow']))
     boton_url.config(command = lambda :examinar(entry_url))
-    boton_generar.config(command = lambda :generar (entry_desde,
+    boton_generar.config(command = lambda :generar (v, entry_desde,
             entry_intervalo,entry_cantdig,entry_ciclos,entry_tervalor,
             entry_url,logbox))
 
